@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Una pregunta bajo las estrellas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,600&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --night: #14162b;
+    --night2: #1e2140;
+    --gold: #e8b768;
+    --pink: #ff8fab;
+    --cream: #f6f1e6;
+    --dim: rgba(246,241,230,0.65);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    background: radial-gradient(ellipse at 50% 20%, var(--night2) 0%, var(--night) 65%);
+    color: var(--cream);
+    font-family: 'Poppins', sans-serif;
+    overflow: hidden;
+    position: relative;
+    min-height: 100vh;
+  }
+  #stars{ position:fixed; inset:0; z-index:0; pointer-events:none; }
+  .star{ position:absolute; width:2px; height:2px; background:var(--cream); border-radius:50%; opacity:0.6; animation: twinkle 3s ease-in-out infinite; }
+  @keyframes twinkle{ 0%,100%{opacity:0.15;} 50%{opacity:0.9;} }
+
+  .screen{ position:relative; z-index:2; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding: 32px 20px; }
+  .hidden{ display:none; }
+
+  .eyebrow{ letter-spacing: 3px; text-transform:uppercase; font-size:12px; color: var(--gold); margin-bottom: 14px; font-weight:600; }
+  h1{ font-family:'Playfair Display', serif; font-weight:700; font-size: clamp(26px, 6vw, 44px); line-height:1.15; max-width: 640px; margin-bottom: 16px; }
+  p.sub{ color: var(--dim); font-size:15px; max-width:420px; margin-bottom: 28px; }
+  button.primary{
+    font-family:'Poppins', sans-serif; font-weight:600; font-size:15px;
+    background: linear-gradient(135deg, var(--gold), #c98f3c);
+    color: #241a08; border:none; padding: 14px 34px; border-radius: 999px;
+    cursor:pointer; box-shadow: 0 8px 24px rgba(232,183,104,0.25);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  button.primary:hover{ transform: translateY(-2px); box-shadow: 0 12px 28px rgba(232,183,104,0.35); }
+
+  #game-screen{ justify-content: flex-start; padding-top: 50px; }
+  #hud{ display:flex; align-items:center; gap:14px; margin-bottom: 8px; }
+  #hud .label{ font-size:13px; color:var(--dim); letter-spacing:1px; text-transform:uppercase; min-width: 60px; }
+  #progress-track{ width: 200px; height: 8px; background: rgba(246,241,230,0.12); border-radius: 999px; overflow:hidden; }
+  #progress-fill{ height:100%; width:0%; background: linear-gradient(90deg, var(--pink), var(--gold)); transition: width .25s ease; }
+  #game-hint{ font-size:12px; color:var(--dim); margin-bottom: 10px; margin-top: 6px; }
+  #game-area{ position:relative; width:100%; max-width: 640px; height: 52vh; min-height:320px; margin-top: 6px; }
+
+  .icon-item{
+    position:absolute; cursor:pointer; user-select:none;
+    image-rendering: pixelated; image-rendering: crisp-edges;
+    filter: drop-shadow(0 0 8px rgba(255,143,171,0.45));
+    animation: float 5s ease-in-out infinite;
+    transition: transform .12s ease;
+    touch-action: manipulation;
+    width: 48px; height: 48px;
+  }
+  .icon-item:hover{ transform: scale(1.12); }
+  .icon-item.reveal{ animation: revealPop 1.8s ease forwards !important; pointer-events:none; }
+  @keyframes revealPop{
+    0%{ transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 8px rgba(255,143,171,0.45)); opacity:1; }
+    20%{ transform: scale(1.55) rotate(8deg); filter: drop-shadow(0 0 18px rgba(232,183,104,0.85)); opacity:1; }
+    45%{ transform: scale(1.4) rotate(-4deg); opacity:1; }
+    75%{ transform: scale(1.4) rotate(0deg); opacity:1; }
+    100%{ transform: scale(1.4) rotate(0deg); opacity:0; }
+  }
+  @keyframes float{ 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(-12px);} }
+
+  #final-screen .icon-strip, #answer-screen .icon-strip{
+    display:flex; gap:14px; margin-top: 26px; opacity:0; animation: fadeIn 1s ease forwards; animation-delay: .3s; flex-wrap: wrap; justify-content:center; max-width: 400px;
+  }
+  #final-screen .icon-strip img, #answer-screen .icon-strip img{
+    width:34px; height:34px; image-rendering: pixelated;
+  }
+  @keyframes fadeIn{ to{opacity:1;} }
+
+  #question{ font-family:'Playfair Display', serif; font-style: italic; font-weight:600; font-size: clamp(24px, 5.5vw, 40px); max-width: 620px; margin-bottom: 6px; }
+  #question .name{ color: var(--gold); font-style: normal; }
+  .final-sub{ color: var(--dim); font-size:14px; margin-bottom:30px; max-width:460px; margin-top: 14px; }
+
+  .choice-row{ display:flex; gap: 18px; align-items:center; position:relative; height:60px; }
+  #btn-yes{
+    background: linear-gradient(135deg, var(--pink), #d9497e); color: var(--cream); border:none;
+    font-family:'Poppins'; font-weight:600; font-size:15px; padding: 15px 38px; border-radius:999px;
+    cursor:pointer; box-shadow: 0 8px 24px rgba(255,143,171,0.3); transition: transform .15s ease;
+  }
+  #btn-yes:hover{ transform: translateY(-2px) scale(1.03); }
+  #btn-no{
+    background: transparent; border: 1px solid rgba(246,241,230,0.3); color: var(--dim);
+    font-family:'Poppins'; font-size:14px; padding: 15px 30px; border-radius:999px; cursor:pointer; position: relative;
+  }
+
+  #answer-screen .big-heart{ font-size:50px; margin-bottom: 14px; animation: beat 1.1s ease-in-out infinite; }
+  @keyframes beat{ 0%,100%{transform:scale(1);} 50%{transform:scale(1.12);} }
+
+  footer{ position:relative; z-index:2; text-align:center; padding: 16px; font-size:11px; color: rgba(246,241,230,0.35); }
+</style>
+</head>
+<body>
+
+<div id="stars"></div>
+
+<div class="screen" id="intro-screen">
+  <div class="eyebrow">Para ti</div>
+  <h1>Antes de preguntarte algo,<br>necesito que juntes un poco de valor conmigo.</h1>
+  <p class="sub">Toca los corazones y descubre lo que esconden. Cuando tengas todos, va a pasar algo.</p>
+  <button class="primary" id="start-btn">Empezar</button>
+</div>
+
+<div class="screen hidden" id="game-screen">
+  <div id="hud">
+    <span class="label" id="hud-count">0 / 8</span>
+    <div id="progress-track"><div id="progress-fill"></div></div>
+  </div>
+  <div id="game-hint">Toca cada corazón antes de que se desvanezca ✨</div>
+  <div id="game-area"></div>
+</div>
+
+<div class="screen hidden" id="final-screen">
+  <svg class="constellation" viewBox="0 0 140 130" width="120" height="112" style="opacity:0.85; margin-bottom:6px;">
+    <polyline points="70,10 100,45 90,80 70,120 50,80 40,45 70,10" fill="none" stroke="#e8b768" stroke-width="1.4" opacity="0.7"/>
+    <circle cx="70" cy="10" r="2.5" fill="#f6f1e6"/><circle cx="100" cy="45" r="2.5" fill="#f6f1e6"/>
+    <circle cx="90" cy="80" r="2.5" fill="#f6f1e6"/><circle cx="70" cy="120" r="2.5" fill="#f6f1e6"/>
+    <circle cx="50" cy="80" r="2.5" fill="#f6f1e6"/><circle cx="40" cy="45" r="2.5" fill="#f6f1e6"/>
+  </svg>
+  <div id="question">¿Te quieres mudar<br>conmigo, <span class="name">mi amor</span>?</div>
+  <p class="final-sub">Ya junté todo lo que necesitaba. Ahora solo falta tu respuesta.</p>
+  <div class="choice-row">
+    <button id="btn-yes">Sí, quiero</button>
+    <button id="btn-no">No</button>
+  </div>
+  <div class="icon-strip" id="strip-final"></div>
+</div>
+
+<div class="screen hidden" id="answer-screen">
+  <div class="big-heart">💛</div>
+  <h1>Entonces empecemos<br>a construir nuestra casa.</h1>
+  <p class="sub">Gracias por decir que sí. Te amo.</p>
+  <div class="icon-strip" id="strip-answer"></div>
+</div>
+
+<footer>hecho con cariño</footer>
+
+<script>
+/* ---------- Starfield ---------- */
+const starsContainer = document.getElementById('stars');
+for(let i=0;i<80;i++){
+  const s = document.createElement('div');
+  s.className='star';
+  s.style.left = Math.random()*100+'%';
+  s.style.top = Math.random()*100+'%';
+  s.style.animationDelay = (Math.random()*3)+'s';
+  starsContainer.appendChild(s);
+}
+
+/* ---------- Pixel-art generator (draws on small canvas, scaled up = 8-bit look) ---------- */
+function makeIcon(drawFn, size){
+  size = size || 24;
+  const c = document.createElement('canvas');
+  c.width = size; c.height = size;
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  drawFn(ctx, size);
+  return c.toDataURL();
+}
+function circle(ctx,x,y,r,color){ ctx.fillStyle=color; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); }
+function rect(ctx,x,y,w,h,color){ ctx.fillStyle=color; ctx.fillRect(x,y,w,h); }
+
+const ICONS_DATA = {
+  heart: makeIcon(ctx=>{
+    ctx.fillStyle='#ff6b90';
+    ctx.beginPath();
+    ctx.moveTo(12,20);
+    ctx.bezierCurveTo(1,12, 5,2, 12,8);
+    ctx.bezierCurveTo(19,2, 23,12, 12,20);
+    ctx.fill();
+  }),
+  dog: makeIcon(ctx=>{ // pomeranian negro
+    circle(ctx,12,15,8,'#141414');
+    circle(ctx,5,7,3.4,'#141414'); circle(ctx,19,7,3.4,'#141414');
+    circle(ctx,12,17,3.2,'#f6f1e6');
+    circle(ctx,9,13,1.3,'#f6f1e6'); circle(ctx,15,13,1.3,'#f6f1e6');
+    circle(ctx,9,13.3,0.6,'#111'); circle(ctx,15,13.3,0.6,'#111');
+    circle(ctx,12,17.6,0.6,'#141414');
+    rect(ctx,11,18.8,2,1.6,'#ff8fab');
+  }),
+  kid: makeIcon(ctx=>{ // nino uniforme futbol
+    circle(ctx,12,6,3.2,'#e8b58f');
+    ctx.fillStyle='#3a2417'; ctx.beginPath(); ctx.arc(12,4.6,3.4,Math.PI,0); ctx.fill();
+    rect(ctx,7,9,10,7,'#3a6ea5');
+    rect(ctx,7,12,10,1.6,'#f6f1e6');
+    rect(ctx,7,16,4,4,'#f6f1e6'); rect(ctx,13,16,4,4,'#f6f1e6');
+    rect(ctx,8,20,3,3,'#e8b58f'); rect(ctx,13,20,3,3,'#e8b58f');
+    circle(ctx,17,22,2.1,'#f6f1e6'); ctx.fillStyle='#141414'; ctx.fillRect(16.3,21.3,1.4,1.4);
+  }),
+  tiger: makeIcon(ctx=>{
+    circle(ctx,12,15,8,'#e2782b');
+    circle(ctx,5,7,3,'#e2782b'); circle(ctx,19,7,3,'#e2782b');
+    circle(ctx,5,7,1.4,'#141414'); circle(ctx,19,7,1.4,'#141414');
+    circle(ctx,12,17,3.4,'#f6f1e6');
+    rect(ctx,7,10,2,5,'#141414'); rect(ctx,15,10,2,5,'#141414');
+    rect(ctx,10,7.5,1.6,4,'#141414'); rect(ctx,12.4,7.5,1.6,4,'#141414');
+    circle(ctx,9,13,1.1,'#141414'); circle(ctx,15,13,1.1,'#141414');
+    rect(ctx,11,16.4,2,1.4,'#141414');
+  }),
+  music: makeIcon(ctx=>{
+    ctx.strokeStyle='#e8b768'; ctx.lineWidth=1.8;
+    ctx.beginPath(); ctx.moveTo(15,4); ctx.lineTo(15,17); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(15,4); ctx.quadraticCurveTo(21,7,15,10); ctx.stroke();
+    ctx.save(); ctx.translate(11,18); ctx.rotate(-0.35);
+    ctx.fillStyle='#e8b768'; ctx.beginPath(); ctx.ellipse(0,0,3.6,2.6,0,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }),
+  cat: makeIcon(ctx=>{
+    circle(ctx,12,15,7.6,'#9a9aa2');
+    ctx.fillStyle='#9a9aa2'; ctx.beginPath(); ctx.moveTo(6,10); ctx.lineTo(4,4); ctx.lineTo(9,8); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(18,10); ctx.lineTo(20,4); ctx.lineTo(15,8); ctx.closePath(); ctx.fill();
+    circle(ctx,12,18,3.6,'#e7e3da');
+    circle(ctx,9,13,1.1,'#141414'); circle(ctx,15,13,1.1,'#141414');
+    ctx.strokeStyle='rgba(20,20,20,0.6)'; ctx.lineWidth=0.6;
+    ctx.beginPath(); ctx.moveTo(4,15); ctx.lineTo(9,15.5); ctx.moveTo(4,17); ctx.lineTo(9,17.2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(20,15); ctx.lineTo(15,15.5); ctx.moveTo(20,17); ctx.lineTo(15,17.2); ctx.stroke();
+  }),
+  bike: makeIcon(ctx=>{
+    ctx.strokeStyle='#141414'; ctx.lineWidth=1.6;
+    ctx.beginPath(); ctx.arc(7,18,4.8,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(17,18,4.8,0,Math.PI*2); ctx.stroke();
+    ctx.strokeStyle='#ff8fab'; ctx.lineWidth=1.6;
+    ctx.beginPath();
+    ctx.moveTo(7,18); ctx.lineTo(12,10); ctx.lineTo(17,18);
+    ctx.moveTo(12,10); ctx.lineTo(10,18);
+    ctx.moveTo(12,10); ctx.lineTo(14,6);
+    ctx.moveTo(6,18); ctx.lineTo(9,18);
+    ctx.stroke();
+    rect(ctx,13.4,5,2.4,1.4,'#141414');
+    rect(ctx,10,17.4,3,1.2,'#141414');
+  }),
+  travel: makeIcon(ctx=>{ // pasaporte
+    rect(ctx,7,4,12,16,'#f6f1e6'); // paginas (borde visible atras)
+    rect(ctx,6,4,12,16,'#2b3a67'); // portada
+    ctx.strokeStyle='#141414'; ctx.lineWidth=1; ctx.strokeRect(6,4,12,16);
+    circle(ctx,12,10,2.4,'#e8b768');
+    circle(ctx,12,10,1,'#2b3a67');
+    rect(ctx,9,15,6,1.2,'#e8b768');
+    rect(ctx,9,17.4,6,1,'rgba(232,183,104,0.55)');
+  }),
+  pig: makeIcon(ctx=>{
+    circle(ctx,12,15,8,'#f4a6b0');
+    circle(ctx,6,8,2.6,'#f4a6b0'); circle(ctx,18,8,2.6,'#f4a6b0');
+    circle(ctx,12,17,3.6,'#e98a9a');
+    circle(ctx,10.6,17,0.7,'#a85868'); circle(ctx,13.4,17,0.7,'#a85868');
+    circle(ctx,9,13,1,'#141414'); circle(ctx,15,13,1,'#141414');
+    ctx.strokeStyle='#f4a6b0'; ctx.lineWidth=1.6;
+    ctx.beginPath(); ctx.arc(20,14,2,0,Math.PI*1.5); ctx.stroke();
+  })
+};
+
+const ITEMS = [
+  { key:'dog' },
+  { key:'kid' },
+  { key:'tiger' },
+  { key:'music' },
+  { key:'cat' },
+  { key:'bike' },
+  { key:'travel' },
+  { key:'pig' }
+];
+
+/* fill icon strips on final/answer screens with the revealed (real) icons */
+['strip-final','strip-answer'].forEach(id=>{
+  const el = document.getElementById(id);
+  ITEMS.forEach(it=>{
+    const img = document.createElement('img');
+    img.src = ICONS_DATA[it.key];
+    el.appendChild(img);
+  });
+});
+
+/* ---------- Game logic ---------- */
+const introScreen = document.getElementById('intro-screen');
+const gameScreen = document.getElementById('game-screen');
+const finalScreen = document.getElementById('final-screen');
+const answerScreen = document.getElementById('answer-screen');
+const gameArea = document.getElementById('game-area');
+const hudCount = document.getElementById('hud-count');
+const progressFill = document.getElementById('progress-fill');
+
+const TARGET = ITEMS.length;
+let queue = [...ITEMS];
+let collected = 0;
+let spawnTimer = null;
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  introScreen.classList.add('hidden');
+  gameScreen.classList.remove('hidden');
+  spawnTimer = setInterval(spawnItem, 850);
+});
+
+function spawnItem(){
+  if(queue.length === 0) return;
+  const item = queue.shift();
+  const el = document.createElement('img');
+  el.className = 'icon-item';
+  el.src = ICONS_DATA.heart;
+  const areaW = gameArea.clientWidth, areaH = gameArea.clientHeight;
+  const x = Math.random() * (areaW - 50);
+  const y = Math.random() * (areaH - 50);
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  el.style.animationDuration = (4.5 + Math.random()*2) + 's';
+
+  const lifeTime = setTimeout(() => { if(el.parentNode){ el.remove(); queue.push(item); } }, 4500);
+
+  el.addEventListener('click', () => {
+    clearTimeout(lifeTime);
+    el.src = ICONS_DATA[item.key];
+    el.classList.add('reveal');
+    collected++;
+    hudCount.textContent = collected + ' / ' + TARGET;
+    progressFill.style.width = (collected/TARGET*100) + '%';
+    setTimeout(() => el.remove(), 1800);
+    if(collected >= TARGET){
+      clearInterval(spawnTimer);
+      setTimeout(showFinal, 2000);
+    }
+  }, { once:true });
+
+  gameArea.appendChild(el);
+}
+
+function showFinal(){
+  gameScreen.classList.add('hidden');
+  finalScreen.classList.remove('hidden');
+}
+
+const btnNo = document.getElementById('btn-no');
+const choiceRow = document.querySelector('.choice-row');
+function dodge(){
+  const rowRect = choiceRow.getBoundingClientRect();
+  const maxX = rowRect.width - btnNo.offsetWidth;
+  const maxY = 40;
+  const randX = (Math.random() * maxX) - (maxX/2);
+  const randY = (Math.random() * maxY) - (maxY/2);
+  btnNo.style.position = 'relative';
+  btnNo.style.left = randX + 'px';
+  btnNo.style.top = randY + 'px';
+}
+btnNo.addEventListener('mouseenter', dodge);
+btnNo.addEventListener('touchstart', (e) => { e.preventDefault(); dodge(); }, {passive:false});
+btnNo.addEventListener('click', (e) => { e.preventDefault(); dodge(); });
+
+document.getElementById('btn-yes').addEventListener('click', () => {
+  finalScreen.classList.add('hidden');
+  answerScreen.classList.remove('hidden');
+});
+</script>
+
+</body>
+</html>
